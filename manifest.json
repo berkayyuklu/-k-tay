@@ -1,6 +1,6 @@
 {
   "name": "Çükütay",
-  "short_name": "Müzik",
+  "short_name": "Çükütay",
   "description": "Kişisel müzik çalar ve dinleme istatistikleri",
   "start_url": "./",
   "display": "standalone",
