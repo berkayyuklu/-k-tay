@@ -103,15 +103,23 @@ const currentSong=songs[currentSongIndex];
 if(audio&&currentSong){
 try{
 const songData=await getSongFromDB(currentSong.id);
-if(songData&&songData.blob){
-const blob=new Blob([songData.blob],{type:currentSong.type});
-const url=URL.createObjectURL(blob);
+if(songData&&songData.dataUrl){
 audio.pause();
-audio.src=url;
+audio.src=songData.dataUrl;
 audio.load();
+console.log('Şarkı yüklendi:', currentSong.name);
 if(isPlaying){
-try{await audio.play()}catch(err){console.error('Play error:',err);setIsPlaying(false)}
+try{
+await audio.play();
+console.log('Çalıyor');
+}catch(err){
+console.error('Play error:',err);
+alert('Mobil tarayıcı otomatik oynatmayı engelliyor. Lütfen play butonuna tekrar basın.');
+setIsPlaying(false);
 }
+}
+}else{
+console.error('Şarkı datası bulunamadı');
 }
 }catch(error){console.error('Şarkı yükleme hatası:',error);setIsPlaying(false)}
 }
@@ -141,8 +149,13 @@ if(audioFiles.length===0){alert('Lütfen geçerli bir ses dosyası seçin');retu
 setIsLoading(true);
 for(const file of audioFiles){
 try{
-const arrayBuffer=await file.arrayBuffer();
-const songData={id:Date.now()+Math.random(),name:file.name.replace(/\.[^/.]+$/,''),size:file.size,type:file.type,blob:arrayBuffer};
+const dataUrl=await new Promise((resolve,reject)=>{
+const reader=new FileReader();
+reader.onload=ev=>resolve(ev.target.result);
+reader.onerror=reject;
+reader.readAsDataURL(file);
+});
+const songData={id:Date.now()+Math.random(),name:file.name.replace(/\.[^/.]+$/,''),size:file.size,type:file.type,dataUrl:dataUrl};
 await saveSongToDB(songData);
 setSongs(prev=>[...prev,{id:songData.id,name:songData.name,size:songData.size,type:songData.type}]);
 }catch(error){console.error('Dosya yükleme hatası:',error);alert('Dosya yüklenirken hata: '+file.name)}
