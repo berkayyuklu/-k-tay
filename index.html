@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -13,298 +12,245 @@
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
-    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; }
-    input[type="range"] { -webkit-appearance: none; appearance: none; }
-    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: #1DB954; cursor: pointer; }
-    input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: #1DB954; cursor: pointer; border: none; }
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto',sans-serif}
+    input[type="range"]{-webkit-appearance:none;appearance:none}
+    input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:#1DB954;cursor:pointer}
+    input[type="range"]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:#1DB954;cursor:pointer;border:none}
   </style>
 </head>
 <body>
   <div id="root"></div>
-  
   <script type="text/babel">
-  // IndexedDB Fonksiyonları
-const DB_NAME = 'MusicPlayerDB';
-const DB_VERSION = 1;
-const STORE_NAME = 'songs';
+const DB_NAME='MusicPlayerDB',DB_VERSION=1,STORE_NAME='songs';
+const openDB=()=>new Promise((resolve,reject)=>{const r=indexedDB.open(DB_NAME,DB_VERSION);r.onerror=()=>reject(r.error);r.onsuccess=()=>resolve(r.result);r.onupgradeneeded=e=>{const db=e.target.result;if(!db.objectStoreNames.contains(STORE_NAME))db.createObjectStore(STORE_NAME,{keyPath:'id'})}});
+const saveSongToDB=async s=>{const db=await openDB();return new Promise((resolve,reject)=>{const t=db.transaction([STORE_NAME],'readwrite'),st=t.objectStore(STORE_NAME),r=st.put(s);r.onsuccess=()=>resolve();r.onerror=()=>reject(r.error)})};
+const getSongFromDB=async id=>{const db=await openDB();return new Promise((resolve,reject)=>{const t=db.transaction([STORE_NAME],'readonly'),st=t.objectStore(STORE_NAME),r=st.get(id);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})};
+const getAllSongsFromDB=async()=>{const db=await openDB();return new Promise((resolve,reject)=>{const t=db.transaction([STORE_NAME],'readonly'),st=t.objectStore(STORE_NAME),r=st.getAll();r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})};
+const deleteSongFromDB=async id=>{const db=await openDB();return new Promise((resolve,reject)=>{const t=db.transaction([STORE_NAME],'readwrite'),st=t.objectStore(STORE_NAME),r=st.delete(id);r.onsuccess=()=>resolve();r.onerror=()=>reject(r.error)})};
+const clearAllSongsFromDB=async()=>{const db=await openDB();return new Promise((resolve,reject)=>{const t=db.transaction([STORE_NAME],'readwrite'),st=t.objectStore(STORE_NAME),r=st.clear();r.onsuccess=()=>resolve();r.onerror=()=>reject(r.error)})};
+const {useState,useEffect,useRef}=React;
+const Play=({size=24,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}><polygon points="5 3 19 12 5 21 5 3"/></svg>;
+const Pause=({size=24,className=""})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>;
+const SkipBack=({size=24})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>;
+const SkipForward=({size=24})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>;
+const Volume2=({size=24})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>;
+const VolumeX=({size=24})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>;
+const Upload=({size=24})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>;
+const Music=({size=24})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>;
+const BarChart3=({size=24})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>;
+const Clock=({size=24})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
+const Calendar=({size=24})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
+const TrendingUp=({size=24})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>;
+const Trash2=({size=24})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>;
+const Download=({size=24})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>;
+    function MusicPlayer(){
+const [songs,setSongs]=useState([]);
+const [currentSongIndex,setCurrentSongIndex]=useState(0);
+const [isPlaying,setIsPlaying]=useState(false);
+const [currentTime,setCurrentTime]=useState(0);
+const [duration,setDuration]=useState(0);
+const [volume,setVolume]=useState(1);
+const [isMuted,setIsMuted]=useState(false);
+const [activeTab,setActiveTab]=useState('library');
+const [isLoading,setIsLoading]=useState(false);
+const [stats,setStats]=useState({totalListeningTime:0,dailyListeningTime:0,weeklyListeningTime:0,yearlyListeningTime:0,playHistory:[]});
+const audioRef=useRef(null);
+const fileInputRef=useRef(null);
+const backupInputRef=useRef(null);
+const lastPlayedSongRef=useRef(null);
 
-const openDB = () => {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
-    request.onupgradeneeded = (event) => {
-      const db = event.target.result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-      }
-    };
-  });
+useEffect(()=>{
+const loadData=async()=>{
+try{
+const statsData=localStorage.getItem('musicPlayerStats');
+if(statsData)setStats(JSON.parse(statsData));
+const songsFromDB=await getAllSongsFromDB();
+const songsMetadata=songsFromDB.map(s=>({id:s.id,name:s.name,size:s.size,type:s.type}));
+setSongs(songsMetadata);
+}catch(e){console.error('Veri yükleme hatası:',e)}
+};
+loadData();
+},[]);
+
+useEffect(()=>{try{localStorage.setItem('musicPlayerStats',JSON.stringify(stats))}catch(e){}},[ stats]);
+
+useEffect(()=>{
+const audio=audioRef.current;
+if(!audio)return;
+const updateTime=()=>setCurrentTime(audio.currentTime);
+const updateDuration=()=>{if(audio.duration&&!isNaN(audio.duration))setDuration(audio.duration)};
+const handleEnded=()=>handleNext();
+const handleError=()=>setIsPlaying(false);
+audio.addEventListener('timeupdate',updateTime);
+audio.addEventListener('loadedmetadata',updateDuration);
+audio.addEventListener('durationchange',updateDuration);
+audio.addEventListener('ended',handleEnded);
+audio.addEventListener('error',handleError);
+return()=>{
+audio.removeEventListener('timeupdate',updateTime);
+audio.removeEventListener('loadedmetadata',updateDuration);
+audio.removeEventListener('durationchange',updateDuration);
+audio.removeEventListener('ended',handleEnded);
+audio.removeEventListener('error',handleError);
+};
+},[]);
+
+useEffect(()=>{
+const loadAndPlaySong=async()=>{
+const audio=audioRef.current;
+const currentSong=songs[currentSongIndex];
+if(audio&&currentSong){
+try{
+const songData=await getSongFromDB(currentSong.id);
+if(songData&&songData.blob){
+const blob=new Blob([songData.blob],{type:currentSong.type});
+const url=URL.createObjectURL(blob);
+audio.pause();
+audio.src=url;
+audio.load();
+if(isPlaying){
+try{await audio.play()}catch(err){console.error('Play error:',err);setIsPlaying(false)}
+}
+}
+}catch(error){console.error('Şarkı yükleme hatası:',error);setIsPlaying(false)}
+}
+};
+loadAndPlaySong();
+},[currentSongIndex,songs]);
+
+useEffect(()=>{
+let interval;
+if(isPlaying&&songs[currentSongIndex]){
+const currentSongId=songs[currentSongIndex].id;
+if(lastPlayedSongRef.current!==currentSongId){
+lastPlayedSongRef.current=currentSongId;
+setStats(prev=>({...prev,playHistory:[...prev.playHistory,{songName:songs[currentSongIndex].name,timestamp:Date.now()}].slice(-1000)}));
+}
+interval=setInterval(()=>{
+setStats(prev=>({...prev,totalListeningTime:prev.totalListeningTime+1,dailyListeningTime:prev.dailyListeningTime+1,weeklyListeningTime:prev.weeklyListeningTime+1,yearlyListeningTime:prev.yearlyListeningTime+1}));
+},1000);
+}
+return()=>clearInterval(interval);
+},[isPlaying,currentSongIndex,songs]);
+
+const handleFileUpload=async(e)=>{
+const files=Array.from(e.target.files);
+const audioFiles=files.filter(file=>file.type.startsWith('audio/'));
+if(audioFiles.length===0){alert('Lütfen geçerli bir ses dosyası seçin');return}
+setIsLoading(true);
+for(const file of audioFiles){
+try{
+const arrayBuffer=await file.arrayBuffer();
+const songData={id:Date.now()+Math.random(),name:file.name.replace(/\.[^/.]+$/,''),size:file.size,type:file.type,blob:arrayBuffer};
+await saveSongToDB(songData);
+setSongs(prev=>[...prev,{id:songData.id,name:songData.name,size:songData.size,type:songData.type}]);
+}catch(error){console.error('Dosya yükleme hatası:',error);alert('Dosya yüklenirken hata: '+file.name)}
+}
+setIsLoading(false);
+e.target.value='';
 };
 
-const saveSongToDB = async (song) => {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction([STORE_NAME], 'readwrite');
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.put(song);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
+const exportBackup=async()=>{
+try{
+setIsLoading(true);
+const allSongs=await getAllSongsFromDB();
+const backup={version:1,date:new Date().toISOString(),stats:stats,songs:allSongs};
+const blob=new Blob([JSON.stringify(backup)],{type:'application/json'});
+const url=URL.createObjectURL(blob);
+const a=document.createElement('a');
+a.href=url;
+a.download=`muzik-yedek-${new Date().toISOString().split('T')[0]}.json`;
+a.click();
+URL.revokeObjectURL(url);
+alert('Yedek başarıyla indirildi!');
+}catch(error){console.error('Yedekleme hatası:',error);alert('Yedekleme sırasında hata oluştu!')}finally{setIsLoading(false)}
 };
 
-const getSongFromDB = async (id) => {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction([STORE_NAME], 'readonly');
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.get(id);
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
+const importBackup=async(e)=>{
+const file=e.target.files[0];
+if(!file)return;
+try{
+setIsLoading(true);
+const text=await file.text();
+const backup=JSON.parse(text);
+if(!backup.version||!backup.songs){alert('Geçersiz yedek dosyası!');return}
+if(!window.confirm(`${backup.songs.length} şarkı ve istatistikler geri yüklenecek. Mevcut veriler silinecek! Devam?`)){return}
+await clearAllSongsFromDB();
+setSongs([]);
+for(const song of backup.songs){await saveSongToDB(song)}
+const songsMetadata=backup.songs.map(s=>({id:s.id,name:s.name,size:s.size,type:s.type}));
+setSongs(songsMetadata);
+setStats(backup.stats);
+alert('Yedek başarıyla geri yüklendi!');
+}catch(error){console.error('Geri yükleme hatası:',error);alert('Geri yükleme sırasında hata oluştu!')}finally{setIsLoading(false);e.target.value=''}
 };
 
-const getAllSongsFromDB = async () => {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction([STORE_NAME], 'readonly');
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.getAll();
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
+const togglePlay=async()=>{
+const audio=audioRef.current;
+if(!audio||songs.length===0)return;
+if(isPlaying){audio.pause();setIsPlaying(false)}
+else{try{await audio.play();setIsPlaying(true)}catch(error){setIsPlaying(false)}}
 };
 
-const deleteSongFromDB = async (id) => {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction([STORE_NAME], 'readwrite');
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.delete(id);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
-};  
-    const { useState, useEffect, useRef } = React;
-    
-    const Play = ({ size = 24, className = "" }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>;
-    const Pause = ({ size = 24, className = "" }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>;
-    const SkipBack = ({ size = 24 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></svg>;
-    const SkipForward = ({ size = 24 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>;
-    const Volume2 = ({ size = 24 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>;
-    const VolumeX = ({ size = 24 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>;
-    const Upload = ({ size = 24 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>;
-    const Music = ({ size = 24 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>;
-    const BarChart3 = ({ size = 24 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 3v18h18"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path></svg>;
-    const Clock = ({ size = 24 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>;
-    const Calendar = ({ size = 24 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>;
-    const TrendingUp = ({ size = 24 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>;
-    const Trash2 = ({ size = 24 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>;
-
-    function MusicPlayer() {
-      const [songs, setSongs] = useState([]);
-      const [currentSongIndex, setCurrentSongIndex] = useState(0);
-      const [isPlaying, setIsPlaying] = useState(false);
-      const [currentTime, setCurrentTime] = useState(0);
-      const [duration, setDuration] = useState(0);
-      const [volume, setVolume] = useState(1);
-      const [isMuted, setIsMuted] = useState(false);
-      const [activeTab, setActiveTab] = useState('library');
-      const [isLoading, setIsLoading] = useState(false);
-      const [stats, setStats] = useState({ totalListeningTime: 0, dailyListeningTime: 0, weeklyListeningTime: 0, yearlyListeningTime: 0, playHistory: [] });
-      const audioRef = useRef(null);
-      const fileInputRef = useRef(null);
-      const songsDataRef = useRef(new Map());
-
-   useEffect(() => {
-  const loadData = async () => {
-    try {
-      // İstatistikleri yükle
-      const statsData = localStorage.getItem('musicPlayerStats');
-      if (statsData) setStats(JSON.parse(statsData));
-      
-      // Şarkıları IndexedDB'den yükle
-      const songsFromDB = await getAllSongsFromDB();
-      const songsMetadata = songsFromDB.map(s => ({
-        id: s.id,
-        name: s.name,
-        size: s.size,
-        type: s.type
-      }));
-      setSongs(songsMetadata);
-    } catch (e) {
-      console.error('Veri yükleme hatası:', e);
-    }
-  };
-  loadData();
-}, []);
-
-      useEffect(() => {
-        try {
-          localStorage.setItem('musicPlayerStats', JSON.stringify(stats));
-        } catch (e) {}
-      }, [stats]);
-
-      useEffect(() => {
-        const audio = audioRef.current;
-        if (!audio) return;
-        const updateTime = () => setCurrentTime(audio.currentTime);
-        const updateDuration = () => { if (audio.duration && !isNaN(audio.duration)) setDuration(audio.duration); };
-        const handleEnded = () => handleNext();
-        const handleError = () => setIsPlaying(false);
-        audio.addEventListener('timeupdate', updateTime);
-        audio.addEventListener('loadedmetadata', updateDuration);
-        audio.addEventListener('durationchange', updateDuration);
-        audio.addEventListener('ended', handleEnded);
-        audio.addEventListener('error', handleError);
-        return () => {
-          audio.removeEventListener('timeupdate', updateTime);
-          audio.removeEventListener('loadedmetadata', updateDuration);
-          audio.removeEventListener('durationchange', updateDuration);
-          audio.removeEventListener('ended', handleEnded);
-          audio.removeEventListener('error', handleError);
-        };
-      }, []);
-
-    useEffect(() => {
-  const loadAndPlaySong = async () => {
-    const audio = audioRef.current;
-    const currentSong = songs[currentSongIndex];
-    if (audio && currentSong) {
-      try {
-        const songData = await getSongFromDB(currentSong.id);
-        if (songData && songData.blob) {
-          const blob = new Blob([songData.blob], { type: currentSong.type });
-          const url = URL.createObjectURL(blob);
-          audio.pause();
-          audio.src = url;
-          audio.load();
-          if (isPlaying) {
-            try {
-              await audio.play();
-            } catch (err) {
-              console.error('Play error:', err);
-              setIsPlaying(false);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Şarkı yükleme hatası:', error);
-        setIsPlaying(false);
-      }
-    }
-  };
-  loadAndPlaySong();
-}, [currentSongIndex, songs]);
-
-      useEffect(() => {
-        let interval;
-        if (isPlaying && songs[currentSongIndex]) {
-          interval = setInterval(() => {
-            setStats(prev => ({
-              ...prev,
-              totalListeningTime: prev.totalListeningTime + 1,
-              dailyListeningTime: prev.dailyListeningTime + 1,
-              weeklyListeningTime: prev.weeklyListeningTime + 1,
-              yearlyListeningTime: prev.yearlyListeningTime + 1,
-              playHistory: [...prev.playHistory, { songName: songs[currentSongIndex].name, timestamp: Date.now(), duration: 1 }].slice(-1000)
-            }));
-          }, 1000);
-        }
-        return () => clearInterval(interval);
-      }, [isPlaying, currentSongIndex, songs]);
-
-   const handleFileUpload = async (e) => {
-  const files = Array.from(e.target.files);
-  const audioFiles = files.filter(file => file.type.startsWith('audio/'));
-  if (audioFiles.length === 0) { alert('Lütfen geçerli bir ses dosyası seçin'); return; }
-  setIsLoading(true);
-  for (const file of audioFiles) {
-    try {
-      const arrayBuffer = await file.arrayBuffer();
-      const songData = {
-        id: Date.now() + Math.random(),
-        name: file.name.replace(/\.[^/.]+$/, ''),
-        size: file.size,
-        type: file.type,
-        blob: arrayBuffer
-      };
-      await saveSongToDB(songData);
-      setSongs(prev => [...prev, { id: songData.id, name: songData.name, size: songData.size, type: songData.type }]);
-    } catch (error) {
-      console.error('Dosya yükleme hatası:', error);
-      alert('Dosya yüklenirken hata: ' + file.name);
-    }
-  }
-  setIsLoading(false);
-  e.target.value = '';
+const handleNext=()=>{if(songs.length===0)return;setCurrentSongIndex(prev=>(prev+1)%songs.length);setIsPlaying(true)};
+const handlePrevious=()=>{if(songs.length===0)return;setCurrentSongIndex(prev=>(prev-1+songs.length)%songs.length);setIsPlaying(true)};
+const handleSeek=e=>{const newTime=parseFloat(e.target.value);setCurrentTime(newTime);if(audioRef.current)audioRef.current.currentTime=newTime};
+const handleVolumeChange=e=>{const newVolume=parseFloat(e.target.value);setVolume(newVolume);if(audioRef.current)audioRef.current.volume=newVolume;setIsMuted(newVolume===0)};
+const toggleMute=()=>{if(isMuted){setVolume(1);if(audioRef.current)audioRef.current.volume=1}else{setVolume(0);if(audioRef.current)audioRef.current.volume=0}setIsMuted(!isMuted)};
+const deleteSong=async(songId,e)=>{
+e.stopPropagation();
+const songIndex=songs.findIndex(s=>s.id===songId);
+if(songIndex===currentSongIndex){audioRef.current?.pause();setIsPlaying(false)}
+try{
+await deleteSongFromDB(songId);
+setSongs(prev=>prev.filter(s=>s.id!==songId));
+if(songIndex===currentSongIndex&&songs.length>1)setCurrentSongIndex(0);
+}catch(error){console.error('Silme hatası:',error)}
+};
+const formatTime=time=>{if(isNaN(time))return '0:00';const minutes=Math.floor(time/60);const seconds=Math.floor(time%60);return `${minutes}:${seconds.toString().padStart(2,'0')}`};
+const formatDuration=seconds=>{const hours=Math.floor(seconds/3600);const minutes=Math.floor((seconds%3600)/60);if(hours>0)return `${hours}s ${minutes}dk`;return `${minutes}dk`};
+const formatFileSize=bytes=>{if(bytes<1024)return bytes+' B';if(bytes<1024*1024)return(bytes/1024).toFixed(1)+' KB';return(bytes/(1024*1024)).toFixed(1)+' MB'};
+const getMostPlayedSong=()=>{
+if(stats.playHistory.length===0)return null;
+const songCounts={};
+stats.playHistory.forEach(entry=>{songCounts[entry.songName]=(songCounts[entry.songName]||0)+1});
+const mostPlayed=Object.entries(songCounts).sort((a,b)=>b[1]-a[1])[0];
+return mostPlayed?{name:mostPlayed[0],count:mostPlayed[1]}:null;
 };
 
-      const togglePlay = async () => {
-        const audio = audioRef.current;
-        if (!audio || songs.length === 0) return;
-        if (isPlaying) { audio.pause(); setIsPlaying(false); } 
-        else { try { await audio.play(); setIsPlaying(true); } catch (error) { setIsPlaying(false); } }
-      };
+const currentSong=songs[currentSongIndex];
+const mostPlayed=getMostPlayedSong();
+      return(
+<div className="min-h-screen bg-black text-white flex flex-col">
+<audio ref={audioRef} preload="auto"/>
+<div className="bg-gradient-to-b from-green-800 to-black p-6">
+<h1 className="text-3xl font-bold mb-2">Müzik Çalarım</h1>
+<p className="text-gray-400">Kişisel müzik kütüphanem</p>
+</div>
+<div className="flex bg-black border-b border-gray-800">
+<button onClick={()=>setActiveTab('library')} className={`flex-1 py-4 flex items-center justify-center gap-2 ${activeTab==='library'?'bg-gray-900 text-green-500':'text-gray-400'}`}><Music size={20}/><span>Kütüphane</span></button>
+<button onClick={()=>setActiveTab('stats')} className={`flex-1 py-4 flex items-center justify-center gap-2 ${activeTab==='stats'?'bg-gray-900 text-green-500':'text-gray-400'}`}><BarChart3 size={20}/><span>İstatistikler</span></button>
+</div>
+{isLoading&&(<div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50"><div className="text-center"><div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div><p className="text-white">İşleniyor...</p></div></div>)}
+<div className="flex-1 overflow-y-auto pb-32">
+{activeTab==='library'&&(<div className="p-4">{songs.length===0&&!isLoading&&(<div className="text-center py-12"><Music size={64} className="mx-auto mb-4 text-gray-600"/><p className="text-gray-400 mb-6">Henüz şarkı eklemediniz</p><button onClick={()=>fileInputRef.current?.click()} className="bg-green-500 text-black px-6 py-3 rounded-full font-semibold hover:bg-green-400 inline-flex items-center gap-2"><Upload size={20}/>Müzik Yükle</button></div>)}{songs.length>0&&(<><div className="flex justify-between items-center mb-4"><h2 className="text-xl font-bold">Şarkılarım ({songs.length})</h2><button onClick={()=>fileInputRef.current?.click()} disabled={isLoading} className="bg-green-500 text-black px-4 py-2 rounded-full font-semibold text-sm hover:bg-green-400 inline-flex items-center gap-2 disabled:opacity-50"><Upload size={16}/>Yükle</button></div><div className="space-y-2">{songs.map((song,index)=>(<div key={song.id} className={`p-4 rounded-lg cursor-pointer transition ${index===currentSongIndex?'bg-gray-800':'bg-gray-900 hover:bg-gray-800'}`}><div className="flex items-center gap-3"><div onClick={()=>{setCurrentSongIndex(index);setIsPlaying(true)}} className={`w-10 h-10 rounded flex items-center justify-center flex-shrink-0 ${index===currentSongIndex&&isPlaying?'bg-green-500':'bg-gray-700'}`}>{index===currentSongIndex&&isPlaying?<Pause size={20} className="text-black"/>:<Play size={20}/>}</div><div onClick={()=>{setCurrentSongIndex(index);setIsPlaying(true)}} className="flex-1 min-w-0"><p className="font-semibold truncate">{song.name}</p><p className="text-xs text-gray-400">{formatFileSize(song.size)}</p></div><button onClick={e=>deleteSong(song.id,e)} className="p-2 hover:bg-red-900/30 rounded-full transition"><Trash2 size={18} className="text-red-400"/></button></div></div>))}</div></>)}</div>)}
+{activeTab==='stats'&&(<div className="p-4 space-y-6"><h2 className="text-2xl font-bold mb-4">İstatistiklerim</h2><div className="grid grid-cols-2 gap-4"><div className="bg-gray-900 p-4 rounded-lg"><div className="flex items-center gap-2 text-green-500 mb-2"><Clock size={20}/><span className="text-sm">Bugün</span></div><p className="text-2xl font-bold">{formatDuration(stats.dailyListeningTime)}</p></div><div className="bg-gray-900 p-4 rounded-lg"><div className="flex items-center gap-2 text-blue-500 mb-2"><Calendar size={20}/><span className="text-sm">Bu Hafta</span></div><p className="text-2xl font-bold">{formatDuration(stats.weeklyListeningTime)}</p></div><div className="bg-gray-900 p-4 rounded-lg"><div className="flex items-center gap-2 text-purple-500 mb-2"><TrendingUp size={20}/><span className="text-sm">Bu Yıl</span></div><p className="text-2xl font-bold">{formatDuration(stats.yearlyListeningTime)}</p></div><div className="bg-gray-900 p-4 rounded-lg"><div className="flex items-center gap-2 text-orange-500 mb-2"><BarChart3 size={20}/><span className="text-sm">Toplam</span></div><p className="text-2xl font-bold">{formatDuration(stats.totalListeningTime)}</p></div></div>{mostPlayed&&(<div className="bg-gradient-to-r from-green-900 to-green-800 p-6 rounded-lg"><h3 className="text-sm text-green-300 mb-2">EN ÇOK DİNLENEN</h3><p className="text-xl font-bold mb-1">{mostPlayed.name}</p><p className="text-gray-300">{mostPlayed.count} kez çalındı</p></div>)}{stats.playHistory.length>0&&(<div className="bg-gray-900 p-4 rounded-lg"><h3 className="font-bold mb-4">Son Dinlenenler</h3><div className="space-y-2">{stats.playHistory.slice(-10).reverse().map((entry,index)=>(<div key={index} className="flex justify-between items-center text-sm"><span className="text-gray-300 truncate">{entry.songName}</span><span className="text-gray-500 ml-2 flex-shrink-0">{new Date(entry.timestamp).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})}</span></div>))}</div></div>)}<div className="bg-gray-900 p-4 rounded-lg border-2 border-blue-900"><h3 className="font-bold mb-3 text-blue-400">Yedekleme</h3><p className="text-sm text-gray-400 mb-4">Şarkılarınızı ve istatistiklerinizi başka cihazlara aktarın</p><div className="flex gap-2"><button onClick={exportBackup} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition inline-flex items-center justify-center gap-2"><Download size={16}/>Yedekle</button><button onClick={()=>backupInputRef.current?.click()} className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition inline-flex items-center justify-center gap-2"><Upload size={16}/>Geri Yükle</button></div></div><div className="bg-gray-900 p-4 rounded-lg border-2 border-red-900"><h3 className="font-bold mb-3 text-red-400">Tehlikeli Bölge</h3><p className="text-sm text-gray-400 mb-4">Bu işlem tüm dinleme istatistiklerinizi sıfırlayacaktır. Şarkılarınız silinmez.</p><button onClick={()=>{if(window.confirm('Tüm istatistikler silinecek! Emin misiniz?')){setStats({totalListeningTime:0,dailyListeningTime:0,weeklyListeningTime:0,yearlyListeningTime:0,playHistory:[]});alert('İstatistikler temizlendi!')}}} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition">İstatistikleri Temizle</button></div></div>)}
+</div>
+{currentSong&&(<div className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 p-4"><div className="mb-3"><div className="flex justify-between text-sm mb-1"><span className="text-gray-400 truncate">{currentSong.name}</span></div><input type="range" min="0" max={duration||0} value={currentTime} onChange={handleSeek} className="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-green-500"/><div className="flex justify-between text-xs text-gray-400 mt-1"><span>{formatTime(currentTime)}</span><span>{formatTime(duration)}</span></div></div><div className="flex items-center justify-between"><div className="flex items-center gap-2 flex-1"><button onClick={toggleMute} className="text-gray-400 hover:text-white">{isMuted?<VolumeX size={20}/>:<Volume2 size={20}/>}</button><input type="range" min="0" max="1" step="0.01" value={volume} onChange={handleVolumeChange} className="w-20 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-green-500"/></div><div className="flex items-center gap-4"><button onClick={handlePrevious} className="text-gray-400 hover:text-white" disabled={songs.length===0}><SkipBack size={24}/></button><button onClick={togglePlay} className="bg-white text-black rounded-full p-3 hover:scale-105 transition" disabled={songs.length===0}>{isPlaying?<Pause size={24}/>:<Play size={24} className="ml-1"/>}</button><button onClick={handleNext} className="text-gray-400 hover:text-white" disabled={songs.length===0}><SkipForward size={24}/></button></div><div className="flex-1"></div></div></div>)}
+<input ref={fileInputRef} type="file" accept="audio/*" multiple onChange={handleFileUpload} className="hidden"/>
+<input ref={backupInputRef} type="file" accept=".json" onChange={importBackup} className="hidden"/>
+</div>
+);
+}
 
-      const handleNext = () => { if (songs.length === 0) return; setCurrentSongIndex((prev) => (prev + 1) % songs.length); setIsPlaying(true); };
-      const handlePrevious = () => { if (songs.length === 0) return; setCurrentSongIndex((prev) => (prev - 1 + songs.length) % songs.length); setIsPlaying(true); };
-      const handleSeek = (e) => { const newTime = parseFloat(e.target.value); setCurrentTime(newTime); if (audioRef.current) audioRef.current.currentTime = newTime; };
-      const handleVolumeChange = (e) => { const newVolume = parseFloat(e.target.value); setVolume(newVolume); if (audioRef.current) audioRef.current.volume = newVolume; setIsMuted(newVolume === 0); };
-      const toggleMute = () => { if (isMuted) { setVolume(1); if (audioRef.current) audioRef.current.volume = 1; } else { setVolume(0); if (audioRef.current) audioRef.current.volume = 0; } setIsMuted(!isMuted); };
-     const deleteSong = async (songId, e) => {
-  e.stopPropagation();
-  const songIndex = songs.findIndex(s => s.id === songId);
-  if (songIndex === currentSongIndex) {
-    audioRef.current?.pause();
-    setIsPlaying(false);
-  }
-  try {
-    await deleteSongFromDB(songId);
-    setSongs(prev => prev.filter(s => s.id !== songId));
-    if (songIndex === currentSongIndex && songs.length > 1) setCurrentSongIndex(0);
-  } catch (error) {
-    console.error('Silme hatası:', error);
-  }
-};
-      const formatTime = (time) => { if (isNaN(time)) return '0:00'; const minutes = Math.floor(time / 60); const seconds = Math.floor(time % 60); return `${minutes}:${seconds.toString().padStart(2, '0')}`; };
-      const formatDuration = (seconds) => { const hours = Math.floor(seconds / 3600); const minutes = Math.floor((seconds % 3600) / 60); if (hours > 0) return `${hours}s ${minutes}dk`; return `${minutes}dk`; };
-      const formatFileSize = (bytes) => { if (bytes < 1024) return bytes + ' B'; if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'; return (bytes / (1024 * 1024)).toFixed(1) + ' MB'; };
-      const getMostPlayedSong = () => { if (stats.playHistory.length === 0) return null; const songCounts = {}; stats.playHistory.forEach(entry => { songCounts[entry.songName] = (songCounts[entry.songName] || 0) + 1; }); const mostPlayed = Object.entries(songCounts).sort((a, b) => b[1] - a[1])[0]; return mostPlayed ? { name: mostPlayed[0], count: mostPlayed[1] } : null; };
+const root=ReactDOM.createRoot(document.getElementById('root'));
+root.render(<MusicPlayer/>);
 
-      const currentSong = songs[currentSongIndex];
-      const mostPlayed = getMostPlayedSong();
-
-      return (
-        <div className="min-h-screen bg-black text-white flex flex-col">
-          <audio ref={audioRef} preload="auto" />
-          <div className="bg-gradient-to-b from-green-800 to-black p-6">
-            <h1 className="text-3xl font-bold mb-2">Müzik Çalarım</h1>
-            <p className="text-gray-400">Kişisel müzik kütüphanem</p>
-          </div>
-          <div className="flex bg-black border-b border-gray-800">
-            <button onClick={() => setActiveTab('library')} className={`flex-1 py-4 flex items-center justify-center gap-2 ${activeTab === 'library' ? 'bg-gray-900 text-green-500' : 'text-gray-400'}`}><Music size={20} /><span>Kütüphane</span></button>
-            <button onClick={() => setActiveTab('stats')} className={`flex-1 py-4 flex items-center justify-center gap-2 ${activeTab === 'stats' ? 'bg-gray-900 text-green-500' : 'text-gray-400'}`}><BarChart3 size={20} /><span>İstatistikler</span></button>
-          </div>
-          {isLoading && (<div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50"><div className="text-center"><div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div><p className="text-white">Müzikler yükleniyor...</p></div></div>)}
-          <div className="flex-1 overflow-y-auto pb-32">
-            {activeTab === 'library' && (<div className="p-4">{songs.length === 0 && !isLoading && (<div className="text-center py-12"><Music size={64} className="mx-auto mb-4 text-gray-600" /><p className="text-gray-400 mb-6">Henüz şarkı eklemediniz</p><button onClick={() => fileInputRef.current?.click()} className="bg-green-500 text-black px-6 py-3 rounded-full font-semibold hover:bg-green-400 inline-flex items-center gap-2"><Upload size={20} />Müzik Yükle</button></div>)}{songs.length > 0 && (<><div className="flex justify-between items-center mb-4"><h2 className="text-xl font-bold">Şarkılarım ({songs.length})</h2><button onClick={() => fileInputRef.current?.click()} disabled={isLoading} className="bg-green-500 text-black px-4 py-2 rounded-full font-semibold text-sm hover:bg-green-400 inline-flex items-center gap-2 disabled:opacity-50"><Upload size={16} />Yükle</button></div><div className="space-y-2">{songs.map((song, index) => (<div key={song.id} className={`p-4 rounded-lg cursor-pointer transition ${index === currentSongIndex ? 'bg-gray-800' : 'bg-gray-900 hover:bg-gray-800'}`}><div className="flex items-center gap-3"><div onClick={() => { setCurrentSongIndex(index); setIsPlaying(true); }} className={`w-10 h-10 rounded flex items-center justify-center flex-shrink-0 ${index === currentSongIndex && isPlaying ? 'bg-green-500' : 'bg-gray-700'}`}>{index === currentSongIndex && isPlaying ? <Pause size={20} className="text-black" /> : <Play size={20} />}</div><div onClick={() => { setCurrentSongIndex(index); setIsPlaying(true); }} className="flex-1 min-w-0"><p className="font-semibold truncate">{song.name}</p><p className="text-xs text-gray-400">{formatFileSize(song.size)}</p></div><button onClick={(e) => deleteSong(song.id, e)} className="p-2 hover:bg-red-900/30 rounded-full transition"><Trash2 size={18} className="text-red-400" /></button></div></div>))}</div></>)}</div>)}
-            {activeTab === 'stats' && (<div className="p-4 space-y-6"><h2 className="text-2xl font-bold mb-4">İstatistiklerim</h2><div className="grid grid-cols-2 gap-4"><div className="bg-gray-900 p-4 rounded-lg"><div className="flex items-center gap-2 text-green-500 mb-2"><Clock size={20} /><span className="text-sm">Bugün</span></div><p className="text-2xl font-bold">{formatDuration(stats.dailyListeningTime)}</p></div><div className="bg-gray-900 p-4 rounded-lg"><div className="flex items-center gap-2 text-blue-500 mb-2"><Calendar size={20} /><span className="text-sm">Bu Hafta</span></div><p className="text-2xl font-bold">{formatDuration(stats.weeklyListeningTime)}</p></div><div className="bg-gray-900 p-4 rounded-lg"><div className="flex items-center gap-2 text-purple-500 mb-2"><TrendingUp size={20} /><span className="text-sm">Bu Yıl</span></div><p className="text-2xl font-bold">{formatDuration(stats.yearlyListeningTime)}</p></div><div className="bg-gray-900 p-4 rounded-lg"><div className="flex items-center gap-2 text-orange-500 mb-2"><BarChart3 size={20} /><span className="text-sm">Toplam</span></div><p className="text-2xl font-bold">{formatDuration(stats.totalListeningTime)}</p></div></div>{mostPlayed && (<div className="bg-gradient-to-r from-green-900 to-green-800 p-6 rounded-lg"><h3 className="text-sm text-green-300 mb-2">EN ÇOK DİNLENEN</h3><p className="text-xl font-bold mb-1">{mostPlayed.name}</p><p className="text-gray-300">{mostPlayed.count} kez çalındı</p></div>)}{stats.playHistory.length > 0 && (<div className="bg-gray-900 p-4 rounded-lg"><h3 className="font-bold mb-4">Son Dinlenenler</h3><div className="space-y-2">{stats.playHistory.slice(-10).reverse().map((entry, index) => (<div key={index} className="flex justify-between items-center text-sm"><span className="text-gray-300 truncate">{entry.songName}</span><span className="text-gray-500 ml-2 flex-shrink-0">{new Date(entry.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span></div>))}</div></div>)}</div>)}
-          </div>
-          {currentSong && (<div className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 p-4"><div className="mb-3"><div className="flex justify-between text-sm mb-1"><span className="text-gray-400 truncate">{currentSong.name}</span></div><input type="range" min="0" max={duration || 0} value={currentTime} onChange={handleSeek} className="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-green-500" /><div className="flex justify-between text-xs text-gray-400 mt-1"><span>{formatTime(currentTime)}</span><span>{formatTime(duration)}</span></div></div><div className="flex items-center justify-between"><div className="flex items-center gap-2 flex-1"><button onClick={toggleMute} className="text-gray-400 hover:text-white">{isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}</button><input type="range" min="0" max="1" step="0.01" value={volume} onChange={handleVolumeChange} className="w-20 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-green-500" /></div><div className="flex items-center gap-4"><button onClick={handlePrevious} className="text-gray-400 hover:text-white" disabled={songs.length === 0}><SkipBack size={24} /></button><button onClick={togglePlay} className="bg-white text-black rounded-full p-3 hover:scale-105 transition" disabled={songs.length === 0}>{isPlaying ? <Pause size={24} /> : <Play size={24} className="ml-1" />}</button><button onClick={handleNext} className="text-gray-400 hover:text-white" disabled={songs.length === 0}><SkipForward size={24} /></button></div><div className="flex-1"></div></div></div>)}
-          <input ref={fileInputRef} type="file" accept="audio/*" multiple onChange={handleFileUpload} className="hidden" />
-        </div>
-      );
-    }
-
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<MusicPlayer />);
-    
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').then(() => console.log('SW registered')).catch(err => console.log('SW failed:', err));
-      });
-    }
-  </script>
+if('serviceWorker' in navigator){
+window.addEventListener('load',()=>{
+navigator.serviceWorker.register('./sw.js').then(()=>console.log('SW registered')).catch(err=>console.log('SW failed:',err));
+});
+}
+</script>
 </body>
 </html>
